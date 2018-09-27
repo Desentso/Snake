@@ -14,7 +14,7 @@ typedef struct {
     int y;
     int direction;
     int length;
-    snake_part parts[];
+    snake_part parts[50];
 } snake;
 
 typedef struct {
@@ -43,6 +43,8 @@ int has_apple(int x, int y);
 apple generate_apple();
 void move_snake();
 int has_snake_collided();
+int snake_collided_with_apple();
+void grow_snake();
 DWORD WINAPI ListenForInput(void* data);
 
 
@@ -59,18 +61,28 @@ int main() {
     int i = 0;
     for (;;) {
         print_area(GAME_AREA_WIDTH, GAME_AREA_HEIGHT);
-        Sleep(100);
-        move_snake();
+        Sleep(200);
+        
+        if (i % 1 == 0) {
+            move_snake();
+        }
 
         if (has_snake_collided() == TRUE) {
             printf("You lost the game");
             break;
         }
 
-        if (i > 100) {
+        if (snake_collided_with_apple() == TRUE){
+            printf("collided with apple");
+            grow_snake();
+        }
+
+        if (i > 10000) {
             break;
         }
         clear_screen();
+
+        i++;
     }
 
     return 0;
@@ -89,10 +101,10 @@ void print_area(int width, int height) {
                 printf("#");
             } else if (k == the_snake.x && i == the_snake.y) {
                 printf("S");
-            } else if (has_snake(i, k) == TRUE) {
+            } else if (has_snake(k, i) == TRUE) {
                 printf("~");
-            } else if (has_apple(i, k) == TRUE) {
-                printf("O");
+            } else if (has_apple(k, i) == TRUE) {
+                printf("A");
             } else {
                 printf(" ");
             }
@@ -124,6 +136,23 @@ void move_snake() {
         the_snake.x -= 1;
     }
 
+    for (int i = 0; i < the_snake.length; i++) {
+        int direction = the_snake.parts[i-1].direction;
+        if (i == 0) {
+            direction = the_snake.direction;
+        }
+
+        if (direction == UP) {
+            the_snake.parts[i].y -= 1;
+        } else if (direction == DOWN) {
+            the_snake.parts[i].y += 1;
+        } else if (direction == RIGHT) {
+            the_snake.parts[i].x += 1;
+        } else if (direction == LEFT) {
+            the_snake.parts[i].x -= 1;
+        }
+    }
+
 }
 
 int has_snake_collided() {
@@ -131,6 +160,16 @@ int has_snake_collided() {
         return 1;
     }
 
+    return 0;
+}
+
+int snake_collided_with_apple() {
+    for (int i = 0; i < apples_index; i++){
+        printf("apple: %d %d snake: %d %d", apples[i].x, apples[i].y, the_snake.x, the_snake.y);
+        if (apples[i].x == the_snake.x && apples[i].y == the_snake.y) {
+            return 1;
+        }
+    }
     return 0;
 }
 
@@ -157,11 +196,50 @@ apple generate_apple() {
     int y = rand() % GAME_AREA_HEIGHT;
 
     while (has_snake(x, y)) {
-        x = rand();
-        y = rand();
+        x = rand() % GAME_AREA_WIDTH;
+        y = rand() % GAME_AREA_HEIGHT;
     }
 
     return (apple) {.x = x, .y = y};
+}
+
+void grow_snake() {
+    int x;
+    int y;
+
+    snake_part last_part = the_snake.parts[the_snake.length-1];
+    if (the_snake.length == 0) {
+        if (the_snake.direction == UP){
+            x = the_snake.x;
+            y = the_snake.y + 1;
+        } else if (the_snake.direction == DOWN){
+            x = the_snake.x;
+            y = the_snake.y - 1;
+        } else if (the_snake.direction == RIGHT){
+            x = the_snake.x - 1;
+            y = the_snake.y;
+        } else if (the_snake.direction == LEFT){
+            x = the_snake.x + 1;
+            y = the_snake.y;
+        }
+    } else {
+        if (last_part.direction == UP){
+            x = last_part.x;
+            y = last_part.y + 1;
+        } else if (last_part.direction == DOWN){
+            x = last_part.x;
+            y = last_part.y - 1;
+        } else if (last_part.direction == RIGHT){
+            x = last_part.x - 1;
+            y = last_part.y;
+        } else if (last_part.direction == LEFT){
+            x = last_part.x + 1;
+            y = last_part.y;
+        }
+    }
+
+    the_snake.parts[the_snake.length] = (snake_part) {.x = x, .y = y, .direction = last_part.direction};
+    the_snake.length += 1;
 }
 
 DWORD WINAPI ListenForInput(void* data) {

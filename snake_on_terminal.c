@@ -37,16 +37,17 @@ static snake the_snake;
 static apple apples[30*15];
 static int apples_index = 0;
 
-void print_area(int width, int height);
-void clear_screen();
+void draw_game_area_and_objects(int width, int height);
+void clear_screen(void);
 int has_snake(int x, int y);
 int has_apple(int x, int y);
-apple generate_apple();
-void move_snake();
+apple generate_apple(void);
+void move_snake(void);
 int has_snake_collided();
-int snake_collided_with_apple();
-void grow_snake();
+int snake_collided_with_apple(void);
+void grow_snake(void);
 void eat_apple(int x, int y);
+void print_snake(int direction);
 DWORD WINAPI ListenForInput(void* data);
 
 
@@ -62,15 +63,14 @@ int main() {
     apples[apples_index] = generate_apple();
     apples_index++;
 
-    int i = 0;
     for (;;) {
-        print_area(GAME_AREA_WIDTH, GAME_AREA_HEIGHT);
+        draw_game_area_and_objects(GAME_AREA_WIDTH, GAME_AREA_HEIGHT);
         Sleep(100);
         
         move_snake();
 
         if (has_snake_collided() == TRUE) {
-            printf("You lost the game");
+            printf("\n\nYou lost the game\n");
             break;
         }
 
@@ -79,18 +79,14 @@ int main() {
             grow_snake();
         }
 
-        if (i > 10000) {
-            break;
-        }
         clear_screen();
 
-        i++;
     }
 
     return 0;
 }
 
-void print_area(int width, int height) {
+void draw_game_area_and_objects(int width, int height) {
     for (int i = 0; i < width; i++){
         printf("#");
     }
@@ -99,30 +95,14 @@ void print_area(int width, int height) {
 
     for (int i = 0; i < height; i++){
         for (int k = 0; k < width; k++){
-            int snake_part_at = has_snake(k, i);
+            int snake_part_direction = has_snake(k, i);
 
             if (k == 0 || k == width-1) {
                 printf("#");
             } else if (k == the_snake.x && i == the_snake.y) {
-                if (the_snake.direction == UP){
-                    printf("^");
-                } else if (the_snake.direction == DOWN) {
-                    printf("v");
-                } else if (the_snake.direction == LEFT) {
-                    printf("<");
-                } else if (the_snake.direction == RIGHT) {
-                    printf(">");
-                }
-            } else if (snake_part_at != FALSE) {
-                if (snake_part_at == UP){
-                    printf("^");
-                } else if (snake_part_at == DOWN) {
-                    printf("v");
-                } else if (snake_part_at == LEFT) {
-                    printf("<");
-                } else if (snake_part_at == RIGHT) {
-                    printf(">");
-                }
+                print_snake(the_snake.direction);
+            } else if (snake_part_direction != FALSE) {
+                print_snake(snake_part_direction);
             } else if (has_apple(k, i) == TRUE) {
                 printf("A");
             } else {
@@ -134,6 +114,18 @@ void print_area(int width, int height) {
 
     for (int i = 0; i < width; i++){
         printf("#");
+    }
+}
+
+void print_snake(int direction) {
+    if (direction == UP) {
+        printf("^");
+    } else if (direction == DOWN) {
+        printf("v");
+    } else if (direction == LEFT) {
+        printf("<");
+    } else if (direction == RIGHT) {
+        printf(">");
     }
 }
 
@@ -160,7 +152,7 @@ void move_snake() {
         the_snake.x -= 1;
     }
 
-    snake_part snake_parts_store[50];
+    snake_part snake_parts_store[30*15];
 
     for (int i = 0; i < the_snake.length; i++) {
         if (i == 0) {
@@ -174,20 +166,6 @@ void move_snake() {
             the_snake.parts[i].y = snake_parts_store[i-1].y;
             the_snake.parts[i].direction = snake_parts_store[i-1].direction;
         }
-        /*int direction = the_snake.parts[i-1].direction;
-        if (i == 0) {
-            direction = the_snake.direction;
-        }
-
-        if (direction == UP) {
-            the_snake.parts[i].y -= 1;
-        } else if (direction == DOWN) {
-            the_snake.parts[i].y += 1;
-        } else if (direction == RIGHT) {
-            the_snake.parts[i].x += 1;
-        } else if (direction == LEFT) {
-            the_snake.parts[i].x -= 1;
-        }*/
     }
 
 }
@@ -253,7 +231,7 @@ apple generate_apple() {
     int x = rand() % (GAME_AREA_WIDTH-2) + 1;
     int y = rand() % (GAME_AREA_HEIGHT-2) + 1;
 
-    while (has_snake(x, y)) {
+    while (has_snake(x, y) != FALSE) {
         x = rand() % (GAME_AREA_WIDTH-2) + 1;
         y = rand() % (GAME_AREA_HEIGHT-2) + 1;
     }
@@ -331,6 +309,7 @@ DWORD WINAPI ListenForInput(void* data) {
                     the_snake.direction = LEFT;
                 }
                 break;
+            // You can exit the game by pressing p
             case 'p':
                 return 1;
                 break;

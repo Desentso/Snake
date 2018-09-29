@@ -1,5 +1,5 @@
-#Snake
-Classic snake game that runs in terminal. Written with C, currently only works in Windows because of OS specific console clear commands and input listening without buffering.
+# Snake
+Classic snake game that runs in terminal. Written with C, currently only works in Windows because of OS specific commands for console clearing and input listening without buffering.
 
 # Installation and running
 You need to compile the snake_on_terminal.c file. 

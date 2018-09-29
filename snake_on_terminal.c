@@ -75,7 +75,6 @@ int main() {
         }
 
         if (snake_collided_with_apple() == TRUE){
-            //printf("collided with apple");
             grow_snake();
         }
 
@@ -131,10 +130,6 @@ void print_snake(int direction) {
 
 void clear_screen() {
     system("@cls");
-    // "Clear" screen by entering 100 line breaks
-    /*for (int i = 0; i < 100; i++){
-        printf("\n");
-    }*/
 }
 
 void move_snake() {
@@ -186,7 +181,6 @@ int has_snake_collided() {
 
 int snake_collided_with_apple() {
     for (int i = 0; i < apples_index; i++){
-        //printf("apple: %d %d snake: %d %d", apples[i].x, apples[i].y, the_snake.x, the_snake.y);
         if (apples[i].x == the_snake.x && apples[i].y == the_snake.y) {
             eat_apple(apples[i].x, apples[i].y);
             apples[apples_index] = generate_apple();
@@ -277,14 +271,12 @@ void grow_snake() {
             y = last_part.y;
         }
     }
-    //printf("\nNEW PART: x: %d y: %d dir: %d", x, y, direction);
-    //Sleep(2000);
+
     the_snake.parts[the_snake.length] = (snake_part) {.x = x, .y = y, .direction = direction};
     the_snake.length += 1;
 }
 
 DWORD WINAPI ListenForInput(void* data) {
-    //printf("Thread func\n");
     for (;;) {
         // Get char without pressing enter
         char c = _getch();
@@ -314,7 +306,6 @@ DWORD WINAPI ListenForInput(void* data) {
                 return 1;
                 break;
         }
-        //printf("%c\n", c);
     }
     return 0;
 }

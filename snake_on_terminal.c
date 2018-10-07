@@ -36,24 +36,34 @@ static int GAME_AREA_HEIGHT = 13;
 static snake the_snake;
 static apple apples[30*15];
 static int apples_index = 0;
+static char *game_area[13][30];
 
 void draw_game_area_and_objects(int width, int height);
-void clear_screen(void);
 int has_snake(int x, int y);
 int has_apple(int x, int y);
 apple generate_apple(void);
 void move_snake(void);
-int has_snake_collided();
+int has_snake_collided(void);
 int snake_collided_with_apple(void);
 void grow_snake(void);
 void eat_apple(int x, int y);
-void print_snake(int direction);
+char * get_snake_symbol(int direction);
+void setCursorPosition(int x, int y);
 DWORD WINAPI ListenForInput(void* data);
 
+void hidecursor() {
+   HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+   CONSOLE_CURSOR_INFO info;
+   info.dwSize = 100;
+   info.bVisible = FALSE;
+   SetConsoleCursorInfo(consoleHandle, &info);
+}
 
 int main() {
     // Seed random function with current time
     srand(time(NULL));
+
+    hidecursor();
 
     the_snake = (snake) { .x=15, .y=7, .direction=UP, .length=0};
 
@@ -63,13 +73,28 @@ int main() {
     apples[apples_index] = generate_apple();
     apples_index++;
 
+    // Print the walls
+    for (int y = 0; y < GAME_AREA_HEIGHT; y++) {
+        for (int x = 0; x < GAME_AREA_WIDTH; x++) {
+            if (x == 0 || x == GAME_AREA_WIDTH-1 || y == 0 || y == GAME_AREA_HEIGHT-1) {
+                game_area[y][x] = "#";
+                printf("#");
+            } else {
+                game_area[y][x] = " ";
+                printf(" ");
+            }
+        }
+        printf("\n");
+    }
+
     for (;;) {
         draw_game_area_and_objects(GAME_AREA_WIDTH, GAME_AREA_HEIGHT);
-        Sleep(100);
+        Sleep(120);
         
         move_snake();
 
         if (has_snake_collided() == TRUE) {
+            setCursorPosition(0, 13);
             printf("\n\nYou lost the game\n");
             break;
         }
@@ -78,61 +103,64 @@ int main() {
             grow_snake();
         }
 
-        clear_screen();
-
     }
-
+    getchar();
     return 0;
 }
 
+void setCursorPosition(int x, int y) {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD coord = { .X = x, .Y = y};
+    SetConsoleCursorPosition(hOut, coord);
+}
+
 void draw_game_area_and_objects(int width, int height) {
-    for (int i = 0; i < width; i++){
-        printf("#");
-    }
+    char * new_game_area[13][30];
 
-    printf("\n");
+    for (int y = 0; y < GAME_AREA_HEIGHT; y++) {
+        for (int x = 0; x < GAME_AREA_WIDTH; x++) {
+            int has_snake_part = has_snake(x, y);
 
-    for (int i = 0; i < height; i++){
-        for (int k = 0; k < width; k++){
-            int snake_part_direction = has_snake(k, i);
-
-            if (k == 0 || k == width-1) {
-                printf("#");
-            } else if (k == the_snake.x && i == the_snake.y) {
-                print_snake(the_snake.direction);
-            } else if (snake_part_direction != FALSE) {
-                print_snake(snake_part_direction);
-            } else if (has_apple(k, i) == TRUE) {
-                printf("A");
+            if (x == 0 || x == GAME_AREA_WIDTH-1 || y == 0 || y == GAME_AREA_HEIGHT-1) {
+                new_game_area[y][x] = "#";
+            } else if (x == the_snake.x && y == the_snake.y) {
+                new_game_area[y][x] = get_snake_symbol(the_snake.direction);
+            } else if (has_snake_part != FALSE) {
+                new_game_area[y][x] = get_snake_symbol(has_snake_part);
+            } else if (has_apple(x, y) == TRUE) {
+                new_game_area[y][x] = "A";
             } else {
-                printf(" ");
+                new_game_area[y][x] = " ";
             }
         }
-        printf("\n");
     }
 
-    for (int i = 0; i < width; i++){
-        printf("#");
+    // Check which parts have changed and redraw only those
+    for (int y = 0; y < GAME_AREA_HEIGHT; y++) {
+        for (int x = 0; x < GAME_AREA_WIDTH; x++) {
+            if (game_area[y][x] != new_game_area[y][x]) {
+                setCursorPosition(x, y);
+                printf("%s", new_game_area[y][x]);
+                game_area[y][x] = new_game_area[y][x];
+            }
+        }
     }
+
 }
 
-void print_snake(int direction) {
+char * get_snake_symbol(int direction) {
     if (direction == UP) {
-        printf("^");
+        return "^";
     } else if (direction == DOWN) {
-        printf("v");
+        return "v";
     } else if (direction == LEFT) {
-        printf("<");
+        return "<";
     } else if (direction == RIGHT) {
-        printf(">");
+        return ">";
     }
 }
 
-void clear_screen() {
-    system("@cls");
-}
-
-void move_snake() {
+void move_snake(void) {
     int prev_x = the_snake.x;
     int prev_y = the_snake.y;
     int prev_direction = the_snake.direction;
@@ -165,7 +193,7 @@ void move_snake() {
 
 }
 
-int has_snake_collided() {
+int has_snake_collided(void) {
     if (the_snake.x <= 0 || the_snake.x >= GAME_AREA_WIDTH-1 || the_snake.y < 0 || the_snake.y >= GAME_AREA_HEIGHT) {
         return 1;
     }
@@ -179,7 +207,7 @@ int has_snake_collided() {
     return 0;
 }
 
-int snake_collided_with_apple() {
+int snake_collided_with_apple(void) {
     for (int i = 0; i < apples_index; i++){
         if (apples[i].x == the_snake.x && apples[i].y == the_snake.y) {
             eat_apple(apples[i].x, apples[i].y);
@@ -221,7 +249,7 @@ int has_apple(int x, int y) {
     return 0;
 }
 
-apple generate_apple() {
+apple generate_apple(void) {
     int x = rand() % (GAME_AREA_WIDTH-2) + 1;
     int y = rand() % (GAME_AREA_HEIGHT-2) + 1;
 
@@ -233,7 +261,7 @@ apple generate_apple() {
     return (apple) {.x = x, .y = y};
 }
 
-void grow_snake() {
+void grow_snake(void) {
     int x;
     int y;
     int direction;
